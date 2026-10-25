@@ -49,12 +49,19 @@ if ! curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
     gh release download "v${version}" --repo rhysd/actionlint \
         --pattern "${archive_name}" --dir "${destination}"
 fi
+# Hash from stdin and compare the digest ourselves: GNU coreutils and the BSD
+# sha256sum shipped with recent macOS print the same "<digest>  -" line, but the
+# BSD tool rejects GNU's --check/--status options.
 if command -v sha256sum >/dev/null 2>&1; then
-    printf '%s  %s\n' "${checksum}" "${archive_path}" | sha256sum --check --status
+    actual_checksum="$(sha256sum < "${archive_path}" | awk '{print $1}')"
 elif command -v shasum >/dev/null 2>&1; then
-    [[ "$(shasum -a 256 "${archive_path}" | awk '{print $1}')" == "${checksum}" ]]
+    actual_checksum="$(shasum -a 256 < "${archive_path}" | awk '{print $1}')"
 else
     echo "No SHA-256 verification tool is available" >&2
+    exit 1
+fi
+if [[ "${actual_checksum}" != "${checksum}" ]]; then
+    echo "actionlint archive checksum mismatch: ${archive_path}" >&2
     exit 1
 fi
 tar -xzf "${archive_path}" -C "${destination}" actionlint

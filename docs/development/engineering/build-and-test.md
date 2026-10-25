@@ -164,6 +164,12 @@ Use the unified validation entry point:
 
 CI calls the same script. Fix the shared script or environment if local and CI behavior differs; do not duplicate command sequences in workflows.
 
+CI runs the static gate only on Linux, but developers also run it on macOS.
+Keep host tool options portable: Apple `ld` needs `-dead_strip` where GNU `ld`
+uses `--gc-sections`, and the BSD `sha256sum` shipped with recent macOS rejects
+GNU-only options such as `--check --status`. `tests/test_host_gate_portability.py`
+covers both cases.
+
 Hardware-affecting changes must also run the applicable on-device checklist in the hardware guide. Report compilation separately from physical-device validation.
 
 Never upload the app-only `build/FoloToy-AI-Passport.bin` to the community. Only
