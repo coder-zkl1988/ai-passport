@@ -140,6 +140,8 @@ cc -std=c11 -Wall -Wextra -Werror -Imain \
 
 完整验证要求预先激活 ESP-IDF 5.5.3。CI 与本地使用同一脚本；若 CI 和本地行为不同，应先修复脚本或环境，而不是维护两份命令。
 
+CI 只在 Linux 上运行静态关卡，但开发者也会在 macOS 上运行它。主机工具的参数必须保持可移植：GNU `ld` 用 `--gc-sections` 的地方，Apple `ld` 需要 `-dead_strip`；较新 macOS 自带的 BSD `sha256sum` 不接受 `--check --status` 这类 GNU 专有参数。`tests/test_host_gate_portability.py` 覆盖了这两种情况。
+
 涉及物理外设的改动必须在真机运行硬件指南验收清单，并把“编译通过”与“硬件验证通过”分开记录。
 
 社区只能上传验证通过的 `build/FoloToy-AI-Passport-full.bin`，不得上传应用单镜像

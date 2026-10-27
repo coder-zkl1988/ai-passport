@@ -10,7 +10,16 @@ usage() {
 
 run_static_checks() {
     local actionlint_bin
+    local dead_code_ldflag
     local test_dir
+
+    # The demo runtime tests rely on the linker dropping unused sections. Apple
+    # ld spells that -dead_strip and rejects GNU ld's --gc-sections.
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        dead_code_ldflag="-Wl,-dead_strip"
+    else
+        dead_code_ldflag="-Wl,--gc-sections"
+    fi
 
     python3 tools/check_repo.py
 
@@ -64,7 +73,7 @@ run_static_checks() {
     for demo in audio low_power ble wifi; do
         "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
             -ffunction-sections -fdata-sections -Itests/demo_stubs -Imain \
-            "tests/test_demo_${demo}_runtime.c" -Wl,--gc-sections \
+            "tests/test_demo_${demo}_runtime.c" "${dead_code_ldflag}" \
             -o "${test_dir}/test_demo_${demo}_runtime"
         "${test_dir}/test_demo_${demo}_runtime"
     done
@@ -75,6 +84,7 @@ run_static_checks() {
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_verify_firmware.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_archive_firmware.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_install_passport_skills.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_host_gate_portability.py
     rm -rf "${test_dir}"
     echo "Host tests: PASS"
 }
